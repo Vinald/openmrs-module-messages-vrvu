@@ -168,11 +168,28 @@ public class TriggerMessageController extends BaseRestController {
 
   private void handleVisitReminder(Patient patient, String templateName) {
     Visit visit = createVisit(patient, templateName);
+    if (visit == null) {
+        LOGGER.error("Failed to create visit for patient {} using template {}",
+                patient != null ? patient.getUuid() : "null", templateName);
+        return;
+    }
     Context.getVisitService().saveVisit(visit);
   }
 
   private Visit createVisit(Patient patient, String templateName) {
-    String[] visitParams = StringUtils.substringBetween(templateName, "(", ")").split("-");
+    String between = StringUtils.substringBetween(templateName, "(", ")");
+    if (StringUtils.isBlank(between)) {
+        LOGGER.error("Template '{}' does not contain visit parameters in parentheses", templateName);
+        return null;
+    }
+
+    String[] visitParams = between.split("-");
+    int requiredLength = Math.max(VISIT_TYPE_PARAM_INDEX, Math.max(VISIT_TIME_PARAM_INDEX, VISIT_LOCATION_PARAM_INDEX)) + 1;
+    if (visitParams.length < requiredLength) {
+        LOGGER.error("Template '{}' visit parameters '{}' have invalid format (expected at least {} parts)",
+                templateName, between, requiredLength);
+        return null;
+    }
 
     Visit visit = new Visit();
     visit.setPatient(patient);
@@ -201,10 +218,15 @@ public class TriggerMessageController extends BaseRestController {
 
   private void setVisitAttributes(Visit visit, String[] visitParams) {
     visit.setAttribute(createAttribute("Visit Status", getInitialVisitStatus()));
-    visit.setAttribute(createAttribute("Visit Time", visitParams[VISIT_TIME_PARAM_INDEX]));
-  }
 
-  private VisitAttribute createAttribute(String attributeTypeName, String value) {
+    if (visitParams.length > VISIT_TIME_PARAM_INDEX && StringUtils.isNotBlank(visitParams[VISIT_TIME_PARAM_INDEX])) {
+        visit.setAttribute(createAttribute("Visit Time", visitParams[VISIT_TIME_PARAM_INDEX]));
+    } else {
+        LOGGER.warn("Visit time parameter is missing or blank; skipping Visit Time attribute");
+    }
+}
+
+private VisitAttribute createAttribute(String attributeTypeName, String value) {
     VisitAttribute visitAttribute = new VisitAttribute();
     visitAttribute.setAttributeType(findVisitAttributeTypeByName(attributeTypeName));
     visitAttribute.setValueReferenceInternal(value);
