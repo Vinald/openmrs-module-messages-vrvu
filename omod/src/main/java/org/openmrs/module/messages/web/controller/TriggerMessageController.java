@@ -168,26 +168,29 @@ public class TriggerMessageController extends BaseRestController {
 
   private void handleVisitReminder(Patient patient, String templateName) {
     Visit visit = createVisit(patient, templateName);
-    if (visit == null) {
-        LOGGER.error("Failed to create visit for patient {} using template {}",
-                patient != null ? patient.getUuid() : "null", templateName);
-        return;
+    if (visit != null) {
+        Context.getVisitService().saveVisit(visit);
+    } else {
+        LOGGER.warn("No visit created for patient {} because template '{}' does not contain visit parameters",
+                patient.getUuid(), templateName);
     }
-    Context.getVisitService().saveVisit(visit);
   }
 
   private Visit createVisit(Patient patient, String templateName) {
-    String between = StringUtils.substringBetween(templateName, "(", ")");
-    if (StringUtils.isBlank(between)) {
-        LOGGER.error("Template '{}' does not contain visit parameters in parentheses", templateName);
+    String paramString = StringUtils.substringBetween(templateName, "(", ")");
+    if (StringUtils.isBlank(paramString)) {
+        // No visit parameters provided, skip visit creation
+        LOGGER.info("Template '{}' has no visit parameters, skipping visit creation.", templateName);
         return null;
     }
 
-    String[] visitParams = between.split("-");
-    int requiredLength = Math.max(VISIT_TYPE_PARAM_INDEX, Math.max(VISIT_TIME_PARAM_INDEX, VISIT_LOCATION_PARAM_INDEX)) + 1;
+    String[] visitParams = paramString.split("-");
+    int requiredLength = Math.max(VISIT_TYPE_PARAM_INDEX,
+            Math.max(VISIT_TIME_PARAM_INDEX, VISIT_LOCATION_PARAM_INDEX)) + 1;
+
     if (visitParams.length < requiredLength) {
-        LOGGER.error("Template '{}' visit parameters '{}' have invalid format (expected at least {} parts)",
-                templateName, between, requiredLength);
+        LOGGER.error("Template '{}' visit parameters '{}' are incomplete (expected at least {} parts)",
+                templateName, paramString, requiredLength);
         return null;
     }
 
