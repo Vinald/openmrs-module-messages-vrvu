@@ -200,8 +200,12 @@ public class MessagingServiceImpl extends BaseOpenmrsDataService<ScheduledServic
       Integer patientId, ZonedDateTime startDate, ZonedDateTime endDate) {
     PatientTemplateCriteria patientTemplateCriteria =
         PatientTemplateCriteria.forPatientId(patientId);
+    List<PatientTemplate> patientTemplates =
+        patientTemplateService.findAllByCriteria(patientTemplateCriteria);
+    // Initialize templateFieldValues collection while session is open to prevent LazyInitializationException
+    initializeTemplateFieldValues(patientTemplates);
     return retrieveAllServiceExecutions(
-        patientTemplateService.findAllByCriteria(patientTemplateCriteria),
+        patientTemplates,
         startDate,
         endDate,
         true);
@@ -214,8 +218,12 @@ public class MessagingServiceImpl extends BaseOpenmrsDataService<ScheduledServic
   public List<ServiceResultList> retrieveAllServiceExecutionsForActor(
       Integer personId, ZonedDateTime startDate, ZonedDateTime endDate) {
     PatientTemplateCriteria patientTemplateCriteria = PatientTemplateCriteria.forActorId(personId);
+    List<PatientTemplate> patientTemplates =
+        patientTemplateService.findAllByCriteria(patientTemplateCriteria);
+    // Initialize templateFieldValues collection while session is open to prevent LazyInitializationException
+    initializeTemplateFieldValues(patientTemplates);
     return retrieveAllServiceExecutions(
-        patientTemplateService.findAllByCriteria(patientTemplateCriteria),
+        patientTemplates,
         startDate,
         endDate,
         true);
@@ -349,6 +357,8 @@ public class MessagingServiceImpl extends BaseOpenmrsDataService<ScheduledServic
         final List<PatientTemplate> patientTemplates =
             patientTemplateService.findAllByCriteria(
                 PatientTemplateCriteria.forTemplate(template.getId()));
+        // Initialize templateFieldValues collection while session is open to prevent LazyInitializationException
+        initializeTemplateFieldValues(patientTemplates);
         results.addAll(retrieveAllServiceExecutions(patientTemplates, startDate, endDate, false));
       }
 
@@ -524,5 +534,23 @@ public class MessagingServiceImpl extends BaseOpenmrsDataService<ScheduledServic
         .stream()
         .filter(attempt -> StringUtils.equalsIgnoreCase(attempt.getServiceExecution(), executionId))
         .findFirst();
+  }
+
+  /**
+   * Initializes the templateFieldValues collection for all PatientTemplate entities
+   * while the Hibernate session is still open. This prevents LazyInitializationException
+   * when the collection is accessed later outside the session.
+   *
+   * @param patientTemplates list of PatientTemplate entities to initialize
+   */
+  private void initializeTemplateFieldValues(List<PatientTemplate> patientTemplates) {
+    if (patientTemplates != null) {
+      for (PatientTemplate pt : patientTemplates) {
+        if (pt != null && pt.getTemplateFieldValues() != null) {
+          // Access the collection to force Hibernate to initialize it
+          pt.getTemplateFieldValues().size();
+        }
+      }
+    }
   }
 }
