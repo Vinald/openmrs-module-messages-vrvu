@@ -229,7 +229,7 @@ public class TriggerMessageController extends BaseRestController {
     }
 }
 
-private VisitAttribute createAttribute(String attributeTypeName, String value) {
+  private VisitAttribute createAttribute(String attributeTypeName, String value) {
     VisitAttribute visitAttribute = new VisitAttribute();
     visitAttribute.setAttributeType(findVisitAttributeTypeByName(attributeTypeName));
     visitAttribute.setValueReferenceInternal(value);
