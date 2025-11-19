@@ -385,9 +385,9 @@
     </bean>
 
     <bean id="messages.abstractTextMessageServiceResultHandlerService"
-      class="org.openmrs.module.messages.api.service.impl.AbstractTextMessageServiceResultsHandlerService"
-      abstract="true"
-      parent="messages.abstractServiceResultHandlerService">
+          class="org.openmrs.module.messages.api.service.impl.AbstractTextMessageServiceResultsHandlerService"
+          abstract="true"
+          parent="messages.abstractServiceResultHandlerService">
         <property name="notificationTemplateService" ref="messages.velocityNotificationTemplateServiceImpl"/>
         <property name="messagingService" ref="messages.messagingService"/>
         <property name="messagesExecutionService" ref="messages.messagesExecutionService"/>
@@ -402,8 +402,8 @@
           parent="messages.abstractServiceResultHandlerService"/>
 
     <bean id="messages.whatsAppServiceResultHandlerService"
-      class="org.openmrs.module.messages.api.service.impl.WhatsAppServiceResultsHandlerServiceImpl"
-      parent="messages.abstractTextMessageServiceResultHandlerService"/>
+          class="org.openmrs.module.messages.api.service.impl.WhatsAppServiceResultsHandlerServiceImpl"
+          parent="messages.abstractTextMessageServiceResultHandlerService"/>
 
     <bean id="messages.smsServiceResultHandlerService"
           class="org.openmrs.module.messages.api.service.impl.SmsServiceResultsHandlerServiceImpl"
@@ -506,6 +506,8 @@
           destroy-method="close"
           parent="messages.peopleActionListener">
         <property name="configService" ref="messages.configService"/>
+        <property name="patientService" ref="patientService"/>
+        <property name="defaultPatientTemplateService" ref="messages.defaultPatientTemplateService"/>
     </bean>
 
     <bean id="messages.removingPeopleListener"

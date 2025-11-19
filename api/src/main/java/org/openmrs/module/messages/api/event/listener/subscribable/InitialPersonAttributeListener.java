@@ -10,13 +10,17 @@
 
 package org.openmrs.module.messages.api.event.listener.subscribable;
 
+import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonAttribute;
 import org.openmrs.PersonAttributeType;
+import org.openmrs.api.PatientService;
 import org.openmrs.event.Event;
+import org.openmrs.module.messages.api.exception.ValidationException;
 import org.openmrs.module.messages.api.model.PersonStatus;
 import org.openmrs.module.messages.api.service.ConfigService;
 import org.openmrs.module.messages.api.constants.ConfigConstants;
+import org.openmrs.module.messages.api.service.DefaultPatientTemplateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +36,10 @@ public class InitialPersonAttributeListener extends PeopleActionListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(InitialPersonAttributeListener.class);
 
     private ConfigService configService;
+
+    private DefaultPatientTemplateService defaultPatientTemplateService;
+
+    private PatientService patientService;
 
     /**
      * Defines the list of Actions which will be performed {@link #performAction(Message)} by this listener
@@ -51,7 +59,10 @@ public class InitialPersonAttributeListener extends PeopleActionListener {
         Person person = extractPerson(message);
         LOGGER.debug("Creating attribute for {} person", person);
         person.addAttribute(createStatusAttribute(person));
+        int personId = person.getPersonId();
+        Patient patient = getPatientById(personId);
         getPersonService().savePerson(person);
+        generateAndSaveTemplate(patient);
     }
 
     public void setConfigService(ConfigService configService) {
@@ -75,5 +86,30 @@ public class InitialPersonAttributeListener extends PeopleActionListener {
             status = PersonStatus.NO_CONSENT;
         }
         return status;
+    }
+
+    private void generateAndSaveTemplate(Patient patient) {
+        defaultPatientTemplateService.generateDefaultPatientTemplates(patient);
+    }
+
+    public void setDefaultPatientTemplateService(DefaultPatientTemplateService defaultPatientTemplateService) {
+        this.defaultPatientTemplateService = defaultPatientTemplateService;
+    }
+
+
+    private Patient getPatientById(Integer id) {
+        if (id == null) {
+            throw new ValidationException("Provided id cannot be null");
+        }
+
+        Patient patient = patientService.getPatient(id);
+        if (patient == null) {
+            throw new ValidationException(String.format("Patient with id %s doesn't exist", id));
+        }
+        return patient;
+    }
+
+    public void setPatientService(PatientService patientService) {
+        this.patientService = patientService;
     }
 }
