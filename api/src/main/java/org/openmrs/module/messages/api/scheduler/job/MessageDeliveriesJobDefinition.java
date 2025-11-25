@@ -187,11 +187,6 @@ public class MessageDeliveriesJobDefinition extends JobDefinition {
         return Context.getService(MessagingService.class);
     }
 
-//  private MessagingService getMessagingService() {
-//    return Context.getRegisteredComponent(
-//        MessagesConstants.MESSAGING_SERVICE, MessagingService.class);
-//  }
-
   private MessagesDeliveryService getDeliveryService() {
     return Context.getRegisteredComponent(
         MessagesConstants.DELIVERY_SERVICE, MessagesDeliveryService.class);
